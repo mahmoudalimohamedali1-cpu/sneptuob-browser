@@ -1,4 +1,4 @@
-name: Build SmartWeb
+name: Build Sneptuob
 
 on:
   workflow_dispatch:
@@ -50,7 +50,7 @@ jobs:
           chmod +x *.sh
           echo "unix_time=$(date +%s)" >> $GITHUB_ENV
 
-      - name: Build SmartWeb
+      - name: Build Sneptuob
         env:
             DEBIAN_FRONTEND: noninteractive
             LOCAL_TEST_JKS: ${{ secrets.LOCAL_TEST_JKS }}
@@ -60,18 +60,18 @@ jobs:
 
       - name: Prepare Release
         run: |
-          export VERSION=$(find chromium/src/out/Default/apks/release -name '*.apk' | sed 's/.*\///;s/\.apk$//' | sed 's/SmartWeb-//')
+          export VERSION=$(find chromium/src/out/Default/apks/release -name '*.apk' | sed 's/.*\///;s/\.apk$//' | sed 's/Sneptuob-//')
           echo "VERSION=$VERSION" >> $GITHUB_ENV
-          mv $(find chromium/src/out/Default/apks/release -name '*.apk') SmartWeb-$VERSION-${{ env.unix_time }}.apk
+          mv $(find chromium/src/out/Default/apks/release -name '*.apk') Sneptuob-$VERSION-${{ env.unix_time }}.apk
 
       - name: Publish Release
         uses: softprops/action-gh-release@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          name: SmartWeb v${{ env.VERSION }}
+          name: Sneptuob v${{ env.VERSION }}
           tag_name: v${{ env.VERSION }}
           body: |
-            SmartWeb Browser v${{ env.VERSION }}
+            Sneptuob Browser v${{ env.VERSION }}
 
             Based on Chromium ${{ env.VERSION }} with:
             - Native Chrome Extension support (MV2 + MV3)
@@ -79,4 +79,4 @@ jobs:
             - Extension toolbar on phone layout
             - Vanadium security patches
           files: |
-            SmartWeb-${{ env.VERSION }}-${{ env.unix_time }}.apk
+            Sneptuob-${{ env.VERSION }}-${{ env.unix_time }}.apk

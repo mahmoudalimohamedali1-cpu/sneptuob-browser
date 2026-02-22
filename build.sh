@@ -36,10 +36,10 @@ EOF
 git submodule foreach git config -f ./.git/config submodule.$name.ignore all
 git config --add remote.origin.fetch '+refs/tags/*:refs/tags/*'
 
-# Apply Vanadium security patches with SmartWeb branding
-replace "$SCRIPT_DIR/vanadium/patches" "VANADIUM" "SMARTWEB"
-replace "$SCRIPT_DIR/vanadium/patches" "Vanadium" "SmartWeb"
-replace "$SCRIPT_DIR/vanadium/patches" "vanadium" "smartweb"
+# Apply Vanadium security patches with Sneptuob branding
+replace "$SCRIPT_DIR/vanadium/patches" "VANADIUM" "SNEPTUOB"
+replace "$SCRIPT_DIR/vanadium/patches" "Vanadium" "Sneptuob"
+replace "$SCRIPT_DIR/vanadium/patches" "vanadium" "sneptuob"
 git am --whitespace=nowarn --keep-non-patch $SCRIPT_DIR/vanadium/patches/*.patch
 
 gclient sync -D --no-history --nohooks
@@ -47,7 +47,7 @@ gclient runhooks
 rm -rf third_party/angle/third_party/VK-GL-CTS/
 ./build/install-build-deps.sh --no-prompt
 
-# ========== SmartWeb Custom Patches ==========
+# ========== Sneptuob Custom Patches ==========
 
 # 1. Enable MV2 extensions (keep both MV2 and MV3 working)
 sed -i 's/BASE_FEATURE(kExtensionManifestV2Unsupported, base::FEATURE_ENABLED_BY_DEFAULT);/BASE_FEATURE(kExtensionManifestV2Unsupported, base::FEATURE_DISABLED_BY_DEFAULT);/' extensions/common/extension_features.cc
@@ -64,15 +64,15 @@ sed -i '/<ViewStub/{N;N;N;N;N;N; /optional_button_stub/a\
 }' chrome/browser/ui/android/toolbar/java/res/layout/toolbar_phone.xml
 sed -i 's/extension_toolbar_baseline_width">600dp/extension_toolbar_baseline_width">0dp/' chrome/browser/ui/android/extensions/java/res/values/dimens.xml
 
-# 3. SmartWeb branding in strings (replace Chrome with SmartWeb in user-visible strings)
-sed -i 's/app_name">Chromium/app_name">SmartWeb/' chrome/android/java/res/values/channel_constants.xml 2>/dev/null || true
-sed -i 's/app_name">Chrome/app_name">SmartWeb/' chrome/android/java/res/values/channel_constants.xml 2>/dev/null || true
+# 3. Sneptuob branding in strings (replace Chrome with Sneptuob in user-visible strings)
+sed -i 's/app_name">Chromium/app_name">Sneptuob/' chrome/android/java/res/values/channel_constants.xml 2>/dev/null || true
+sed -i 's/app_name">Chrome/app_name">Sneptuob/' chrome/android/java/res/values/channel_constants.xml 2>/dev/null || true
 
-# 4. Apply SmartWeb custom patches if they exist
+# 4. Apply Sneptuob custom patches if they exist
 if [ -d "$SCRIPT_DIR/patches" ]; then
     for patch in $SCRIPT_DIR/patches/*.patch; do
         if [ -f "$patch" ]; then
-            echo "Applying SmartWeb patch: $patch"
+            echo "Applying Sneptuob patch: $patch"
             git am --whitespace=nowarn --keep-non-patch "$patch" || git am --abort
         fi
     done
@@ -80,7 +80,7 @@ fi
 
 # ========== Build Configuration ==========
 cat > out/Default/args.gn <<EOF
-# SmartWeb Browser - Chromium-based with native extension support
+# Sneptuob Browser - Chromium-based with native extension support
 chrome_public_manifest_package = "com.brow.spear"
 is_desktop_android = true
 target_os = "android"
@@ -130,4 +130,4 @@ autoninja -C out/Default chrome_public_apk
 export PATH=$PWD/third_party/jdk/current/bin/:$PATH
 export ANDROID_HOME=$PWD/third_party/android_sdk/public
 mkdir -p out/Default/apks/release
-sign_apk $(find out/Default/apks -name 'Chrome*.apk') out/Default/apks/release/SmartWeb-$VERSION.apk
+sign_apk $(find out/Default/apks -name 'Chrome*.apk') out/Default/apks/release/Sneptuob-$VERSION.apk

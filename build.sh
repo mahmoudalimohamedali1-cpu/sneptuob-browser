@@ -2,7 +2,7 @@
 source common.sh
 set_keys
 export VERSION=$(grep -m1 -o '[0-9]\+\(\.[0-9]\+\)\{3\}' vanadium/args.gn)
-export CHROMIUM_SOURCE=https://chromium.googlesource.com/chromium/src.git # https://github.com/chromium/chromium.git
+export CHROMIUM_SOURCE=https://chromium.googlesource.com/chromium/src.git
 export DEBIAN_FRONTEND=noninteractive
 sudo apt update
 sudo apt install -y sudo lsb-release file nano git curl python3 python3-pillow
@@ -36,10 +36,10 @@ EOF
 git submodule foreach git config -f ./.git/config submodule.$name.ignore all
 git config --add remote.origin.fetch '+refs/tags/*:refs/tags/*'
 
-# https://grapheneos.org/build#browser-and-webview
-replace "$SCRIPT_DIR/vanadium/patches" "VANADIUM" "HELIUM"
-replace "$SCRIPT_DIR/vanadium/patches" "Vanadium" "Helium"
-replace "$SCRIPT_DIR/vanadium/patches" "vanadium" "helium"
+# Apply Vanadium security patches with SmartWeb branding
+replace "$SCRIPT_DIR/vanadium/patches" "VANADIUM" "SMARTWEB"
+replace "$SCRIPT_DIR/vanadium/patches" "Vanadium" "SmartWeb"
+replace "$SCRIPT_DIR/vanadium/patches" "vanadium" "smartweb"
 git am --whitespace=nowarn --keep-non-patch $SCRIPT_DIR/vanadium/patches/*.patch
 
 gclient sync -D --no-history --nohooks
@@ -47,15 +47,13 @@ gclient runhooks
 rm -rf third_party/angle/third_party/VK-GL-CTS/
 ./build/install-build-deps.sh --no-prompt
 
-# https://github.com/imputnet/helium-linux/blob/main/scripts/shared.sh
-# python3 "${SCRIPT_DIR}/helium/utils/name_substitution.py" --sub -t .
-# python3 "${SCRIPT_DIR}/helium/utils/helium_version.py" --tree "${SCRIPT_DIR}/helium" --chromium-tree .
-# python3 "${SCRIPT_DIR}/helium/utils/generate_resources.py" "${SCRIPT_DIR}/helium/resources/generate_resources.txt" "${SCRIPT_DIR}/helium/resources"
-# python3 "${SCRIPT_DIR}/helium/utils/replace_resources.py" "${SCRIPT_DIR}/helium/resources/helium_resources.txt" "${SCRIPT_DIR}/helium/resources" .
+# ========== SmartWeb Custom Patches ==========
 
+# 1. Enable MV2 extensions (keep both MV2 and MV3 working)
 sed -i 's/BASE_FEATURE(kExtensionManifestV2Unsupported, base::FEATURE_ENABLED_BY_DEFAULT);/BASE_FEATURE(kExtensionManifestV2Unsupported, base::FEATURE_DISABLED_BY_DEFAULT);/' extensions/common/extension_features.cc
 sed -i 's/BASE_FEATURE(kExtensionManifestV2Disabled, base::FEATURE_ENABLED_BY_DEFAULT);/BASE_FEATURE(kExtensionManifestV2Disabled, base::FEATURE_DISABLED_BY_DEFAULT);/' extensions/common/extension_features.cc
-: << TOOLBAR_PHONE
+
+# 2. Enable extension toolbar on phone layout
 sed -i '/<ViewStub/{N;N;N;N;N;N; /optional_button_stub/a\
 \
         <ViewStub\
@@ -65,10 +63,25 @@ sed -i '/<ViewStub/{N;N;N;N;N;N; /optional_button_stub/a\
             android:layout_height="match_parent" />
 }' chrome/browser/ui/android/toolbar/java/res/layout/toolbar_phone.xml
 sed -i 's/extension_toolbar_baseline_width">600dp/extension_toolbar_baseline_width">0dp/' chrome/browser/ui/android/extensions/java/res/values/dimens.xml
-TOOLBAR_PHONE
 
+# 3. SmartWeb branding in strings (replace Chrome with SmartWeb in user-visible strings)
+sed -i 's/app_name">Chromium/app_name">SmartWeb/' chrome/android/java/res/values/channel_constants.xml 2>/dev/null || true
+sed -i 's/app_name">Chrome/app_name">SmartWeb/' chrome/android/java/res/values/channel_constants.xml 2>/dev/null || true
+
+# 4. Apply SmartWeb custom patches if they exist
+if [ -d "$SCRIPT_DIR/patches" ]; then
+    for patch in $SCRIPT_DIR/patches/*.patch; do
+        if [ -f "$patch" ]; then
+            echo "Applying SmartWeb patch: $patch"
+            git am --whitespace=nowarn --keep-non-patch "$patch" || git am --abort
+        fi
+    done
+fi
+
+# ========== Build Configuration ==========
 cat > out/Default/args.gn <<EOF
-chrome_public_manifest_package = "io.github.jqssun.helium"
+# SmartWeb Browser - Chromium-based with native extension support
+chrome_public_manifest_package = "com.brow.spear"
 is_desktop_android = true
 target_os = "android"
 target_cpu = "arm64"
@@ -110,10 +123,11 @@ include_both_v8_snapshots = false
 include_both_v8_snapshots_android_secondary_abi = false
 generate_linker_map = true
 EOF
-gn gen out/Default # gn args out/Default; echo 'treat_warnings_as_errors = false' >> out/Default/args.gn
+
+gn gen out/Default
 autoninja -C out/Default chrome_public_apk
 
 export PATH=$PWD/third_party/jdk/current/bin/:$PATH
 export ANDROID_HOME=$PWD/third_party/android_sdk/public
 mkdir -p out/Default/apks/release
-sign_apk $(find out/Default/apks -name 'Chrome*.apk') out/Default/apks/release/$VERSION.apk
+sign_apk $(find out/Default/apks -name 'Chrome*.apk') out/Default/apks/release/SmartWeb-$VERSION.apk

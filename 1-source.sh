@@ -1,13 +1,12 @@
 #!/bin/bash
+# Step 1: Download Chromium source, apply patches, run gclient sync
 source common.sh
-set_keys
 export VERSION=$(grep -m1 -o '[0-9]\+\(\.[0-9]\+\)\{3\}' vanadium/args.gn)
 export CHROMIUM_SOURCE=https://chromium.googlesource.com/chromium/src.git
 export DEBIAN_FRONTEND=noninteractive
 sudo apt update
 sudo apt install -y sudo lsb-release file nano git curl python3 python3-pillow
 
-# https://github.com/uazo/cromite/blob/master/tools/images/chr-source/prepare-build.sh
 git clone --depth 1 https://chromium.googlesource.com/chromium/tools/depot_tools.git
 export PATH="$PWD/depot_tools:$PATH"
 mkdir -p chromium/src/out/Default; cd chromium
@@ -64,7 +63,7 @@ sed -i '/<ViewStub/{N;N;N;N;N;N; /optional_button_stub/a\
 }' chrome/browser/ui/android/toolbar/java/res/layout/toolbar_phone.xml
 sed -i 's/extension_toolbar_baseline_width">600dp/extension_toolbar_baseline_width">0dp/' chrome/browser/ui/android/extensions/java/res/values/dimens.xml
 
-# 3. Sneptuob branding in strings (replace Chrome with Sneptuob in user-visible strings)
+# 3. Sneptuob branding in strings
 sed -i 's/app_name">Chromium/app_name">Sneptuob/' chrome/android/java/res/values/channel_constants.xml 2>/dev/null || true
 sed -i 's/app_name">Chrome/app_name">Sneptuob/' chrome/android/java/res/values/channel_constants.xml 2>/dev/null || true
 
@@ -88,7 +87,7 @@ target_cpu = "arm64"
 is_component_build = false
 is_debug = false
 is_official_build = true
-symbol_level = 0
+symbol_level = 1
 disable_fieldtrial_testing_config = true
 ffmpeg_branding = "Chrome"
 proprietary_codecs = true
@@ -102,7 +101,7 @@ google_api_key = "x"
 google_default_client_id = "x"
 google_default_client_secret = "x"
 
-blink_symbol_level=0
+blink_symbol_level=1
 build_contextual_search=false
 build_with_tflite_lib=true
 chrome_pgo_phase=0
@@ -113,8 +112,7 @@ enable_mdns=false
 exclude_unwind_tables=false
 icu_use_data_file=true
 rtc_build_examples=false
-use_debug_fission=false
-use_thin_lto=false
+use_debug_fission=true
 use_errorprone_java_compiler=false
 use_official_google_api_keys=false
 use_rtti=false
@@ -122,13 +120,9 @@ enable_av1_decoder=true
 enable_dav1d_decoder=true
 include_both_v8_snapshots = false
 include_both_v8_snapshots_android_secondary_abi = false
-generate_linker_map = false
+generate_linker_map = true
 EOF
 
 gn gen out/Default
-autoninja -C out/Default chrome_public_apk
-
-export PATH=$PWD/third_party/jdk/current/bin/:$PATH
-export ANDROID_HOME=$PWD/third_party/android_sdk/public
-mkdir -p out/Default/apks/release
-sign_apk $(find out/Default/apks -name 'Chrome*.apk') out/Default/apks/release/Sneptuob-$VERSION.apk
+echo "=== Source preparation complete ==="
+echo "VERSION=$VERSION"

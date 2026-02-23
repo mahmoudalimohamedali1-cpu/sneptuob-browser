@@ -17,6 +17,7 @@ permissions:
 jobs:
   build:
     runs-on: ${{ github.event_name == 'workflow_dispatch' && inputs.runner || 'ubuntu-latest' }}
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v5
         with:
@@ -36,14 +37,28 @@ jobs:
             git push
           fi
 
-      - name: Free disk space
+      - name: Free disk space aggressively
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/boost
           sudo rm -rf /usr/share/swift /usr/local/graalvm /usr/local/.ghcup
-          sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' azure-cli google-cloud-sdk google-chrome-stable firefox || true
+          sudo rm -rf /opt/hostedtoolcache /opt/az /usr/share/az_* /usr/local/julia*
+          sudo rm -rf /usr/local/share/powershell /usr/share/miniconda /usr/lib/jvm
+          sudo rm -rf /usr/share/kotlinc /usr/share/gradle* /usr/share/sbt
+          sudo rm -rf /usr/local/share/vcpkg /usr/local/share/chromium
+          sudo apt-get remove -y '^dotnet-.*' '^llvm-.*' 'php.*' azure-cli google-cloud-sdk google-chrome-stable firefox mono-devel '^temurin-.*' '^mysql-.*' '^postgresql-.*' || true
           sudo apt-get autoremove -y
           sudo apt-get clean
+          echo "=== Disk space after cleanup ==="
           df -h /
+
+      - name: Setup swap for extra memory
+        run: |
+          sudo fallocate -l 8G /mnt/swapfile
+          sudo chmod 600 /mnt/swapfile
+          sudo mkswap /mnt/swapfile
+          sudo swapon /mnt/swapfile
+          echo "=== Memory ==="
+          free -h
 
       - name: Set ENV
         run: |
